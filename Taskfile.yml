@@ -1,0 +1,64 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list
+
+  install:
+    desc: Install development tools via aqua
+    cmds:
+      - aqua i
+
+  fmt:
+    desc: Format Go code
+    cmds:
+      - goimports -w .
+
+  lint:
+    desc: Run linter
+    cmds:
+      - revive ./...
+
+  tidy:
+    desc: Tidy and download Go modules
+    cmds:
+      - go mod tidy
+      - go mod download
+
+  build:
+    desc: Build the project
+    cmds:
+      - go build ./...
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test -v ./...
+
+  test:coverage:
+    desc: Run tests with coverage
+    cmds:
+      - go test -v -cover -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out -o coverage.html
+
+  example:basic:
+    desc: Run basic example
+    dir: examples/basic
+    cmds:
+      - go run main.go
+
+  check:
+    desc: Run all checks (fmt, lint, test)
+    cmds:
+      - task: fmt
+      - task: lint
+      - task: test
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - rm -f coverage.out coverage.html
