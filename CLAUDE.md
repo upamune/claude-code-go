@@ -2,88 +2,94 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## プロジェクト概要
+## Project Overview
 
-claude-code-goは、Claude Code CLIのGo SDKです。GoアプリケーションからClaude AIの機能を簡単に統合できるように設計されています。
+This is a Go SDK for the Claude Code CLI, providing a programmatic interface to interact with Claude from Go applications. The SDK is designed with zero dependencies (using only the standard library) and offers both synchronous and streaming APIs.
 
-## 開発コマンド
+## Development Commands
 
-### ツール管理
+### Build and Test
 ```bash
-# aquaで管理されているツールのインストール
-aqua i
+# Install development tools (uses aqua)
+task install
 
-# コードフォーマット
-goimports -w .
+# Run all checks (format, lint, test)
+task check
 
-# Linting
-revive ./...
+# Individual commands
+task fmt    # Format code with goimports
+task lint   # Run revive linter
+task test   # Run tests
+task build  # Build the project
 ```
 
-### ビルドとテスト
-```bash
-# 依存関係の取得
-go mod tidy
+### Development Tools
+- **goimports**: Code formatter (v0.34.0)
+- **revive**: Go linter (v1.10.0)
+- **task**: Task runner (v3.44.0)
+- All tools are managed via aqua (see aqua.yaml)
 
-# ビルド
-go build ./...
+## Architecture
 
-# テスト実行（テストが実装されたら）
-go test ./...
+### Core Components
 
-# 使用例の実行
-cd examples/basic
-go run main.go
-```
+1. **Client Interface** (`client.go`): Main entry point for SDK users
+   - `Client` interface with `Query` and `QueryStream` methods
+   - Default implementation using OS command execution
+   - Supports custom `CommandExecutor` injection for testing
 
-## アーキテクチャ概要
+2. **Message System** (`types.go`, `message.go`):
+   - Typed message system with interfaces for different message types
+   - JSON parsing with strict validation
+   - Support for streaming and partial messages
 
-### コア設計原則
-1. **シンプルなラッパー**: Claude Code CLIを`exec.Command`で実行し、出力をパース
-2. **型安全**: 各メッセージタイプに対応する構造体とインターフェースを提供
-3. **最小限の依存**: 標準ライブラリのみを使用
+3. **Command Building** (`builder.go`):
+   - Converts Go `Options` struct to CLI arguments
+   - Handles all Claude CLI flags and options
+   - Special handling for MCP server configurations
 
-### 主要コンポーネント
+4. **Error Handling** (`errors.go`):
+   - Typed errors: `AbortError`, `ProcessError`, `ParseError`, `ConfigError`
+   - Each error type provides specific context for debugging
 
-#### claude.go - メインAPI
-- `Query()`: 同期的にクエリを実行し、最終結果を返す
-- `QueryStream()`: ストリーミング出力でクエリを実行、各メッセージでコールバック
-- `Exec()`: 生のCLIコマンドを実行
+### Key Design Patterns
 
-#### types.go - 型定義
-- `Options`: SDK設定（モデル、ツール制限、権限など）
-- `Message`インターフェース: 全メッセージタイプの共通インターフェース
-- MCPサーバー設定: Stdio、SSE、HTTPタイプをサポート
+- **Dependency Injection**: `CommandExecutor` interface allows for easy testing
+- **Channel-based Streaming**: Uses Go channels for real-time message streaming
+- **Builder Pattern**: `argumentsBuilder` constructs CLI arguments from options
+- **Interface-based Design**: Core functionality exposed through interfaces
 
-#### message.go - メッセージパーシング
-- CLIのJSON出力を適切な型にパース
-- 各メッセージタイプ（User、Assistant、Result、System、PermissionRequest）の処理
+## Testing Strategy
 
-#### errors.go - エラー型
-- `AbortError`: ユーザー中断
-- `ProcessError`: CLIプロセスエラー
-- `ParseError`: JSONパースエラー
-- `ConfigError`: 設定エラー
+- Unit tests for all core components (`*_test.go` files)
+- Mock `CommandExecutor` for isolated testing
+- Test utilities in `test_utils.go` for common test scenarios
+- Examples in `examples/` directory demonstrate real usage
 
-### メッセージフロー
-1. ユーザーが`Query()`または`QueryStream()`を呼び出し
-2. SDKがClaude CLIプロセスを起動
-3. CLIからのJSON出力を`parseMessage()`でパース
-4. 適切なメッセージ型として返却またはコールバック実行
+## Important Implementation Notes
 
-## 開発時の注意点
+1. **JSON Parsing**: The SDK expects JSONL format from Claude CLI output. Each line is parsed independently as a complete JSON object.
 
-### CLIとの統合
-- Claude Code CLIがインストール・設定済みであることが前提
-- `exec.Command`の出力はバッファリングされるため、大量出力時は注意
-- プロセスの適切なクリーンアップを保証（defer cmd.Wait()）
+2. **Streaming**: The `QueryStream` method uses goroutines to read stdout/stderr concurrently, parsing messages in real-time.
 
-### エラーハンドリング
-- CLIの終了コードをチェックし、適切なエラー型を返す
-- パースエラーは元のメッセージを含めて返す
-- ユーザー中断（Ctrl+C）は`AbortError`として処理
+3. **Process Management**: Proper cleanup is crucial - always defer `Close()` on message streams to prevent goroutine leaks.
 
-### 今後の実装予定
-- テストの追加（単体テスト、統合テスト）
-- より高度なストリーミング制御
-- セッション管理機能の強化
+4. **Error Propagation**: Errors from the Claude CLI are wrapped in typed errors for better handling by SDK users.
+
+## Common Development Tasks
+
+### Adding New Options
+1. Add field to `Options` struct in `types.go`
+2. Update `argumentsBuilder.build()` in `builder.go` to handle the new option
+3. Add corresponding test in `builder_test.go`
+
+### Adding New Message Types
+1. Define the message struct in `types.go`
+2. Implement the `Message` interface
+3. Update `parseMessage()` in `message.go` to handle the new type
+4. Add parsing test in `message_test.go`
+
+### Debugging Tips
+- Enable verbose output by checking stderr from the Claude process
+- Use the `executor_test.go` mock executor to simulate Claude CLI responses
+- Check `builder_test.go` for examples of how options translate to CLI arguments
