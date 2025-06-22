@@ -135,7 +135,7 @@ type Options struct {
     MCPServers map[string]MCPServerConfig  // MCP server configs
     
     // Permission handling
-    PermissionMode           PermissionMode  // ask, allow, deny
+    PermissionMode           PermissionMode  // default, acceptEdits, bypassPermissions, plan
     PermissionPromptToolName string          // Custom permission tool
     
     // Session management

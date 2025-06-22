@@ -1,6 +1,7 @@
 package claude
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"os/exec"
@@ -26,7 +27,18 @@ func (e *DefaultCommandExecutor) Execute(ctx context.Context, name string, args 
 	if workingDir != "" {
 		cmd.Dir = workingDir
 	}
-	return cmd.CombinedOutput()
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return nil, &ProcessError{
+				ExitCode: exitErr.ExitCode(),
+				Message:  string(output),
+			}
+		}
+		return nil, err
+	}
+	return output, nil
 }
 
 // ExecuteStream runs a command and returns a stream of its output
@@ -42,20 +54,26 @@ func (e *DefaultCommandExecutor) ExecuteStream(ctx context.Context, name string,
 		return nil, err
 	}
 
+	// Capture stderr for error reporting
+	var stderrBuf bytes.Buffer
+	cmd.Stderr = &stderrBuf
+
 	if err := cmd.Start(); err != nil {
 		return nil, err
 	}
 
 	return &streamReader{
-		reader: stdout,
-		cmd:    cmd,
+		reader:    stdout,
+		cmd:       cmd,
+		stderrBuf: &stderrBuf,
 	}, nil
 }
 
 // streamReader wraps stdout pipe and ensures command cleanup
 type streamReader struct {
-	reader io.ReadCloser
-	cmd    *exec.Cmd
+	reader    io.ReadCloser
+	cmd       *exec.Cmd
+	stderrBuf *bytes.Buffer
 }
 
 func (s *streamReader) Read(p []byte) (n int, err error) {
@@ -64,5 +82,15 @@ func (s *streamReader) Read(p []byte) (n int, err error) {
 
 func (s *streamReader) Close() error {
 	s.reader.Close()
-	return s.cmd.Wait()
+	err := s.cmd.Wait()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return &ProcessError{
+				ExitCode: exitErr.ExitCode(),
+				Message:  s.stderrBuf.String(),
+			}
+		}
+		return err
+	}
+	return nil
 }

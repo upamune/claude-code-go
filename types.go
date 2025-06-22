@@ -7,12 +7,14 @@ type PermissionMode string
 
 // PermissionMode constants define how Claude Code handles permissions for tool use
 const (
-	// PermissionAsk asks for permission before each tool use
-	PermissionAsk PermissionMode = "ask"
-	// PermissionAllow allows all tool use without asking
-	PermissionAllow PermissionMode = "allow"
-	// PermissionDeny denies all tool use
-	PermissionDeny PermissionMode = "deny"
+	// PermissionDefault uses the default permission mode
+	PermissionDefault PermissionMode = "default"
+	// PermissionAcceptEdits automatically accepts file edits
+	PermissionAcceptEdits PermissionMode = "acceptEdits"
+	// PermissionBypassPermissions bypasses all permission prompts
+	PermissionBypassPermissions PermissionMode = "bypassPermissions"
+	// PermissionPlan uses plan mode
+	PermissionPlan PermissionMode = "plan"
 )
 
 // Options configures the behavior of Claude Code SDK

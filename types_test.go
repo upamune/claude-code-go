@@ -12,9 +12,10 @@ func TestPermissionMode(t *testing.T) {
 		mode PermissionMode
 		want string
 	}{
-		{"ask", PermissionAsk, "ask"},
-		{"allow", PermissionAllow, "allow"},
-		{"deny", PermissionDeny, "deny"},
+		{"default", PermissionDefault, "default"},
+		{"acceptEdits", PermissionAcceptEdits, "acceptEdits"},
+		{"bypassPermissions", PermissionBypassPermissions, "bypassPermissions"},
+		{"plan", PermissionPlan, "plan"},
 	}
 
 	for _, tt := range tests {

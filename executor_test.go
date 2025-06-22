@@ -116,6 +116,30 @@ func TestDefaultCommandExecutor_Execute_Context(t *testing.T) {
 	}
 }
 
+func TestDefaultCommandExecutor_Execute_ProcessError(t *testing.T) {
+	executor := &DefaultCommandExecutor{}
+	ctx := context.Background()
+
+	// Test command that exits with non-zero status
+	_, err := executor.Execute(ctx, "sh", []string{"-c", "echo 'error message' >&2; exit 1"}, "", "")
+	if err == nil {
+		t.Fatal("Expected error for command with non-zero exit")
+	}
+
+	processErr, ok := err.(*ProcessError)
+	if !ok {
+		t.Fatalf("Expected *ProcessError, got %T", err)
+	}
+
+	if processErr.ExitCode != 1 {
+		t.Errorf("Expected exit code 1, got %d", processErr.ExitCode)
+	}
+
+	if !strings.Contains(processErr.Message, "error message") {
+		t.Errorf("Expected error message to contain 'error message', got: %s", processErr.Message)
+	}
+}
+
 func TestDefaultCommandExecutor_ExecuteStream(t *testing.T) {
 	executor := &DefaultCommandExecutor{}
 	ctx := context.Background()
@@ -262,6 +286,42 @@ func TestMockCommandExecutor(t *testing.T) {
 			t.Errorf("ExecuteStream() error = %v, want 'not implemented'", err)
 		}
 	})
+}
+
+func TestDefaultCommandExecutor_ExecuteStream_ProcessError(t *testing.T) {
+	executor := &DefaultCommandExecutor{}
+	ctx := context.Background()
+
+	// Test command that exits with error
+	reader, err := executor.ExecuteStream(ctx, "sh", []string{"-c", "echo 'stream error' >&2; exit 2"}, "", "")
+	if err != nil {
+		t.Fatalf("ExecuteStream() initial error = %v", err)
+	}
+
+	// Read all data
+	_, readErr := io.ReadAll(reader)
+	if readErr != nil {
+		t.Fatalf("ReadAll() error = %v", readErr)
+	}
+
+	// Close should return ProcessError
+	closeErr := reader.Close()
+	if closeErr == nil {
+		t.Fatal("Expected error on Close() for command with non-zero exit")
+	}
+
+	processErr, ok := closeErr.(*ProcessError)
+	if !ok {
+		t.Fatalf("Expected *ProcessError, got %T", closeErr)
+	}
+
+	if processErr.ExitCode != 2 {
+		t.Errorf("Expected exit code 2, got %d", processErr.ExitCode)
+	}
+
+	if !strings.Contains(processErr.Message, "stream error") {
+		t.Errorf("Expected error message to contain 'stream error', got: %s", processErr.Message)
+	}
 }
 
 func TestDefaultCommandExecutor_ExecuteStream_Timeout(t *testing.T) {

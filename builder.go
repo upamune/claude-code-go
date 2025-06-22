@@ -106,12 +106,13 @@ func (b *ArgumentBuilder) Validate(opts *Options) error {
 	// Validate permission mode
 	if opts.PermissionMode != "" {
 		validModes := map[PermissionMode]bool{
-			PermissionAsk:   true,
-			PermissionAllow: true,
-			PermissionDeny:  true,
+			PermissionDefault:           true,
+			PermissionAcceptEdits:       true,
+			PermissionBypassPermissions: true,
+			PermissionPlan:              true,
 		}
 		if !validModes[opts.PermissionMode] {
-			return &ConfigError{Field: "PermissionMode", Value: string(opts.PermissionMode), Reason: "must be 'ask', 'allow', or 'deny'"}
+			return &ConfigError{Field: "PermissionMode", Value: string(opts.PermissionMode), Reason: "must be 'default', 'acceptEdits', 'bypassPermissions', or 'plan'"}
 		}
 	}
 

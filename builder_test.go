@@ -82,11 +82,11 @@ func TestArgumentBuilder_BuildArgs(t *testing.T) {
 		{
 			name: "permission configuration",
 			opts: &Options{
-				PermissionMode:           PermissionAsk,
+				PermissionMode:           PermissionDefault,
 				PermissionPromptToolName: "dangerous-tool",
 			},
 			want: []string{
-				"--permission-mode", "ask",
+				"--permission-mode", "default",
 				"--permission-prompt-tool-name", "dangerous-tool",
 			},
 		},
@@ -135,7 +135,7 @@ func TestArgumentBuilder_BuildArgs(t *testing.T) {
 				CustomSystemPrompt:       "Be helpful",
 				AllowedTools:             []string{"read"},
 				MaxThinkingTokens:        intPtr(500),
-				PermissionMode:           PermissionDeny,
+				PermissionMode:           PermissionPlan,
 				PermissionPromptToolName: "write",
 			},
 			want: []string{
@@ -144,7 +144,7 @@ func TestArgumentBuilder_BuildArgs(t *testing.T) {
 				"--system-prompt", "Be helpful",
 				"--allowed-tools", "read",
 				"--max-thinking-tokens", "500",
-				"--permission-mode", "deny",
+				"--permission-mode", "plan",
 				"--permission-prompt-tool-name", "write",
 			},
 		},
@@ -220,7 +220,7 @@ func TestArgumentBuilder_Validate(t *testing.T) {
 				Model:             "claude-3",
 				MaxThinkingTokens: intPtr(1000),
 				MaxTurns:          intPtr(10),
-				PermissionMode:    PermissionAllow,
+				PermissionMode:    PermissionDefault,
 			},
 			wantErr: false,
 		},
@@ -261,14 +261,14 @@ func TestArgumentBuilder_Validate(t *testing.T) {
 		{
 			name: "valid permission modes",
 			opts: &Options{
-				PermissionMode: PermissionAsk,
+				PermissionMode: PermissionDefault,
 			},
 			wantErr: false,
 		},
 		{
 			name: "another valid permission mode",
 			opts: &Options{
-				PermissionMode: PermissionDeny,
+				PermissionMode: PermissionBypassPermissions,
 			},
 			wantErr: false,
 		},
