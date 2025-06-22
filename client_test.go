@@ -298,7 +298,7 @@ func TestClaudeClient_QueryStream(t *testing.T) {
 				`{invalid json}`,
 			},
 			wantMessages:      []Message{&UserMessage{Type: "user", SessionID: "test"}}, // One message before error
-			wantErr:           false, // Stream starts successfully, error comes through channel
+			wantErr:           false,                                                    // Stream starts successfully, error comes through channel
 			expectStreamError: true,
 		},
 		{

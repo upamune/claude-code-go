@@ -97,4 +97,3 @@ func (c *ClaudeClient) Query(ctx context.Context, prompt string, opts *Options) 
 
 	return &result, nil
 }
-

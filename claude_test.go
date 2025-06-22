@@ -345,7 +345,7 @@ func TestPackageFunctions_Integration(t *testing.T) {
 	if err != nil {
 		t.Errorf("QueryStream() integration test failed: %v", err)
 	}
-	
+
 	messageCount := 0
 	for msgOrErr := range stream.Messages {
 		if msgOrErr.Err != nil {
@@ -354,7 +354,7 @@ func TestPackageFunctions_Integration(t *testing.T) {
 		}
 		messageCount++
 	}
-	
+
 	if messageCount != 2 {
 		t.Errorf("QueryStream() integration test received %d messages, want 2", messageCount)
 	}

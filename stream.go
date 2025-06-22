@@ -56,7 +56,7 @@ func (c *ClaudeClient) QueryStream(ctx context.Context, prompt string, opts *Opt
 
 	// Create context for cancellation
 	streamCtx, cancel := context.WithCancel(ctx)
-	
+
 	// Execute command with streaming
 	stream, err := c.executor.ExecuteStream(streamCtx, executable, args, prompt)
 	if err != nil {
@@ -114,4 +114,3 @@ func (c *ClaudeClient) QueryStream(ctx context.Context, prompt string, opts *Opt
 		cancel:   cancel,
 	}, nil
 }
-
