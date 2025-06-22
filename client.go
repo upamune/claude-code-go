@@ -81,7 +81,7 @@ func (c *clientImpl) Query(ctx context.Context, prompt string, opts *Options) (*
 	args := append([]string{"--print", "--output-format", "json"}, c.builder.BuildArgs(opts)...)
 
 	// Execute command
-	output, err := c.executor.Execute(ctx, executable, args, prompt)
+	output, err := c.executor.Execute(ctx, executable, args, prompt, opts.WorkingDir)
 	if err != nil {
 		if processErr, ok := err.(*ProcessError); ok {
 			return nil, processErr

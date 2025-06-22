@@ -14,20 +14,20 @@ var _ CommandExecutor = (*MockCommandExecutor)(nil)
 
 // MockCommandExecutor is a mock implementation of CommandExecutor for testing
 type MockCommandExecutor struct {
-	ExecuteFunc       func(ctx context.Context, name string, args []string, stdin string) ([]byte, error)
-	ExecuteStreamFunc func(ctx context.Context, name string, args []string, stdin string) (io.ReadCloser, error)
+	ExecuteFunc       func(ctx context.Context, name string, args []string, stdin string, workingDir string) ([]byte, error)
+	ExecuteStreamFunc func(ctx context.Context, name string, args []string, stdin string, workingDir string) (io.ReadCloser, error)
 }
 
-func (m *MockCommandExecutor) Execute(ctx context.Context, name string, args []string, stdin string) ([]byte, error) {
+func (m *MockCommandExecutor) Execute(ctx context.Context, name string, args []string, stdin string, workingDir string) ([]byte, error) {
 	if m.ExecuteFunc != nil {
-		return m.ExecuteFunc(ctx, name, args, stdin)
+		return m.ExecuteFunc(ctx, name, args, stdin, workingDir)
 	}
 	return nil, errors.New("ExecuteFunc not implemented")
 }
 
-func (m *MockCommandExecutor) ExecuteStream(ctx context.Context, name string, args []string, stdin string) (io.ReadCloser, error) {
+func (m *MockCommandExecutor) ExecuteStream(ctx context.Context, name string, args []string, stdin string, workingDir string) (io.ReadCloser, error) {
 	if m.ExecuteStreamFunc != nil {
-		return m.ExecuteStreamFunc(ctx, name, args, stdin)
+		return m.ExecuteStreamFunc(ctx, name, args, stdin, workingDir)
 	}
 	return nil, errors.New("ExecuteStreamFunc not implemented")
 }
@@ -86,7 +86,7 @@ func TestDefaultCommandExecutor_Execute(t *testing.T) {
 				t.Skip("Skipping command execution test in short mode")
 			}
 
-			output, err := executor.Execute(ctx, tt.command, tt.args, tt.stdin)
+			output, err := executor.Execute(ctx, tt.command, tt.args, tt.stdin, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Execute() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -110,7 +110,7 @@ func TestDefaultCommandExecutor_Execute_Context(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	_, err := executor.Execute(ctx, "sleep", []string{"5"}, "")
+	_, err := executor.Execute(ctx, "sleep", []string{"5"}, "", "")
 	if err == nil {
 		t.Error("Expected error when context is cancelled")
 	}
@@ -149,7 +149,7 @@ func TestDefaultCommandExecutor_ExecuteStream(t *testing.T) {
 				t.Skip("Skipping command execution test in short mode")
 			}
 
-			reader, err := executor.ExecuteStream(ctx, tt.command, tt.args, tt.stdin)
+			reader, err := executor.ExecuteStream(ctx, tt.command, tt.args, tt.stdin, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ExecuteStream() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -205,7 +205,7 @@ func TestMockCommandExecutor(t *testing.T) {
 
 	t.Run("Execute", func(t *testing.T) {
 		mock := &MockCommandExecutor{
-			ExecuteFunc: func(_ context.Context, name string, args []string, stdin string) ([]byte, error) {
+			ExecuteFunc: func(_ context.Context, name string, args []string, stdin string, _ string) ([]byte, error) {
 				if name == "test" && len(args) == 1 && args[0] == "arg" && stdin == "input" {
 					return []byte("output"), nil
 				}
@@ -213,7 +213,7 @@ func TestMockCommandExecutor(t *testing.T) {
 			},
 		}
 
-		output, err := mock.Execute(ctx, "test", []string{"arg"}, "input")
+		output, err := mock.Execute(ctx, "test", []string{"arg"}, "input", "")
 		if err != nil {
 			t.Errorf("Execute() error = %v", err)
 		}
@@ -224,7 +224,7 @@ func TestMockCommandExecutor(t *testing.T) {
 
 	t.Run("ExecuteStream", func(t *testing.T) {
 		mock := &MockCommandExecutor{
-			ExecuteStreamFunc: func(_ context.Context, name string, _ []string, _ string) (io.ReadCloser, error) {
+			ExecuteStreamFunc: func(_ context.Context, name string, _ []string, _ string, _ string) (io.ReadCloser, error) {
 				if name == "stream" {
 					return &mockReadCloser{
 						Reader: strings.NewReader("stream data"),
@@ -234,7 +234,7 @@ func TestMockCommandExecutor(t *testing.T) {
 			},
 		}
 
-		reader, err := mock.ExecuteStream(ctx, "stream", nil, "")
+		reader, err := mock.ExecuteStream(ctx, "stream", nil, "", "")
 		if err != nil {
 			t.Errorf("ExecuteStream() error = %v", err)
 		}
@@ -252,12 +252,12 @@ func TestMockCommandExecutor(t *testing.T) {
 	t.Run("NotImplemented", func(t *testing.T) {
 		mock := &MockCommandExecutor{}
 
-		_, err := mock.Execute(ctx, "test", nil, "")
+		_, err := mock.Execute(ctx, "test", nil, "", "")
 		if err == nil || !strings.Contains(err.Error(), "not implemented") {
 			t.Errorf("Execute() error = %v, want 'not implemented'", err)
 		}
 
-		_, err = mock.ExecuteStream(ctx, "test", nil, "")
+		_, err = mock.ExecuteStream(ctx, "test", nil, "", "")
 		if err == nil || !strings.Contains(err.Error(), "not implemented") {
 			t.Errorf("ExecuteStream() error = %v, want 'not implemented'", err)
 		}
@@ -274,7 +274,7 @@ func TestDefaultCommandExecutor_ExecuteStream_Timeout(t *testing.T) {
 	defer cancel()
 
 	// This should timeout
-	reader, err := executor.ExecuteStream(ctx, "sleep", []string{"5"}, "")
+	reader, err := executor.ExecuteStream(ctx, "sleep", []string{"5"}, "", "")
 	if err != nil {
 		// Context timeout should cause an error
 		return

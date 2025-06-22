@@ -12,24 +12,30 @@ var _ CommandExecutor = (*DefaultCommandExecutor)(nil)
 
 // CommandExecutor is an interface for executing commands
 type CommandExecutor interface {
-	Execute(ctx context.Context, name string, args []string, stdin string) ([]byte, error)
-	ExecuteStream(ctx context.Context, name string, args []string, stdin string) (io.ReadCloser, error)
+	Execute(ctx context.Context, name string, args []string, stdin string, workingDir string) ([]byte, error)
+	ExecuteStream(ctx context.Context, name string, args []string, stdin string, workingDir string) (io.ReadCloser, error)
 }
 
 // DefaultCommandExecutor implements CommandExecutor using os/exec
 type DefaultCommandExecutor struct{}
 
 // Execute runs a command and returns its output
-func (e *DefaultCommandExecutor) Execute(ctx context.Context, name string, args []string, stdin string) ([]byte, error) {
+func (e *DefaultCommandExecutor) Execute(ctx context.Context, name string, args []string, stdin string, workingDir string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Stdin = strings.NewReader(stdin)
+	if workingDir != "" {
+		cmd.Dir = workingDir
+	}
 	return cmd.CombinedOutput()
 }
 
 // ExecuteStream runs a command and returns a stream of its output
-func (e *DefaultCommandExecutor) ExecuteStream(ctx context.Context, name string, args []string, stdin string) (io.ReadCloser, error) {
+func (e *DefaultCommandExecutor) ExecuteStream(ctx context.Context, name string, args []string, stdin string, workingDir string) (io.ReadCloser, error) {
 	cmd := exec.CommandContext(ctx, name, args...)
 	cmd.Stdin = strings.NewReader(stdin)
+	if workingDir != "" {
+		cmd.Dir = workingDir
+	}
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {

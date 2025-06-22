@@ -299,7 +299,7 @@ func TestPackageFunctions_Integration(t *testing.T) {
 	// We'll use a custom executor to avoid actual CLI calls
 
 	mockExecutor := &MockCommandExecutor{
-		ExecuteFunc: func(_ context.Context, _ string, _ []string, _ string) ([]byte, error) {
+		ExecuteFunc: func(_ context.Context, _ string, _ []string, _ string, _ string) ([]byte, error) {
 			// Return a valid result
 			return []byte(`{
 				"type": "result",
@@ -308,7 +308,7 @@ func TestPackageFunctions_Integration(t *testing.T) {
 				"usage": {"input_tokens": 5, "output_tokens": 10}
 			}`), nil
 		},
-		ExecuteStreamFunc: func(_ context.Context, _ string, _ []string, _ string) (io.ReadCloser, error) {
+		ExecuteStreamFunc: func(_ context.Context, _ string, _ []string, _ string, _ string) (io.ReadCloser, error) {
 			// Return a stream with messages
 			data := strings.Join([]string{
 				`{"type": "user", "message": {}, "session_id": "test"}`,

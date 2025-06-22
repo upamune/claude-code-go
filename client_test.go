@@ -124,6 +124,41 @@ func TestClient_Query(t *testing.T) {
 			errType:    &ParseError{},
 		},
 		{
+			name:   "with working directory",
+			prompt: "test",
+			opts: &Options{
+				WorkingDir: "/tmp/test",
+			},
+			mockOutput: []byte(`{
+				"type": "result",
+				"subtype": "success",
+				"duration_ms": 1000,
+				"duration_api_ms": 800,
+				"is_error": false,
+				"num_turns": 1,
+				"result": "Test with working directory",
+				"session_id": "test-session",
+				"total_cost_usd": 0.001,
+				"usage": {"input_tokens": 10, "output_tokens": 20}
+			}`),
+			want: &ResultMessage{
+				Type:          "result",
+				Subtype:       "success",
+				DurationMS:    1000,
+				DurationAPIMS: 800,
+				IsError:       false,
+				NumTurns:      1,
+				Result:        "Test with working directory",
+				SessionID:     "test-session",
+				TotalCostUSD:  0.001,
+				Usage: Usage{
+					InputTokens:  10,
+					OutputTokens: 20,
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name:   "with custom options",
 			prompt: "test",
 			opts: &Options{
@@ -164,7 +199,7 @@ func TestClient_Query(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockExecutor := &MockCommandExecutor{
-				ExecuteFunc: func(_ context.Context, name string, args []string, stdin string) ([]byte, error) {
+				ExecuteFunc: func(_ context.Context, name string, args []string, stdin string, workingDir string) ([]byte, error) {
 					// Verify executable name
 					expectedName := "claude"
 					if tt.opts != nil && tt.opts.PathToClaudeCodeExecutable != "" {
@@ -177,6 +212,15 @@ func TestClient_Query(t *testing.T) {
 					// Verify stdin contains prompt
 					if stdin != tt.prompt {
 						t.Errorf("Execute() stdin = %v, want %v", stdin, tt.prompt)
+					}
+
+					// Verify working directory
+					expectedWorkingDir := ""
+					if tt.opts != nil {
+						expectedWorkingDir = tt.opts.WorkingDir
+					}
+					if workingDir != expectedWorkingDir {
+						t.Errorf("Execute() workingDir = %v, want %v", workingDir, expectedWorkingDir)
 					}
 
 					// Verify required args
@@ -309,7 +353,7 @@ func TestClient_QueryStream(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockExecutor := &MockCommandExecutor{
-				ExecuteStreamFunc: func(_ context.Context, _ string, args []string, _ string) (io.ReadCloser, error) {
+				ExecuteStreamFunc: func(_ context.Context, _ string, args []string, _ string, _ string) (io.ReadCloser, error) {
 					if tt.streamErr != nil {
 						return nil, tt.streamErr
 					}
@@ -420,7 +464,7 @@ func TestClient_QueryStream_ReaderError(t *testing.T) {
 		`{"type": "assistant", "message": {"text": "response"}, "session_id": "test"}` + "\n"
 
 	mockExecutor := &MockCommandExecutor{
-		ExecuteStreamFunc: func(_ context.Context, _ string, _ []string, _ string) (io.ReadCloser, error) {
+		ExecuteStreamFunc: func(_ context.Context, _ string, _ []string, _ string, _ string) (io.ReadCloser, error) {
 			return &errorReaderCloser{
 				errorAfterNReads: &errorAfterNReads{
 					data:       streamData,
@@ -530,7 +574,7 @@ func TestClient_BuildArgsIntegration(t *testing.T) {
 
 	calledWithArgs := false
 	mockExecutor := &MockCommandExecutor{
-		ExecuteFunc: func(_ context.Context, _ string, args []string, _ string) ([]byte, error) {
+		ExecuteFunc: func(_ context.Context, _ string, args []string, _ string, _ string) ([]byte, error) {
 			calledWithArgs = true
 
 			// Check that options were properly converted to args

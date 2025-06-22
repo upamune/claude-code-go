@@ -58,7 +58,7 @@ func (c *clientImpl) QueryStream(ctx context.Context, prompt string, opts *Optio
 	streamCtx, cancel := context.WithCancel(ctx)
 
 	// Execute command with streaming
-	stream, err := c.executor.ExecuteStream(streamCtx, executable, args, prompt)
+	stream, err := c.executor.ExecuteStream(streamCtx, executable, args, prompt, opts.WorkingDir)
 	if err != nil {
 		cancel()
 		if processErr, ok := err.(*ProcessError); ok {

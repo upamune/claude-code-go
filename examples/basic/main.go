@@ -26,8 +26,6 @@ func main() {
 	// Configure options
 	opts := &claude.Options{
 		Model: "claude-3-5-sonnet-20241022",
-		// Uncomment to use specific working directory
-		// WorkingDir: "/path/to/project",
 		// Uncomment to use specific tools
 		// AllowedTools: []string{"Read", "Write", "Bash"},
 	}
