@@ -10,7 +10,7 @@ import (
 )
 
 // defaultClient is the package-level client instance
-var defaultClient Client = NewClient()
+var defaultClient = NewClient()
 
 // IsClaudeAvailable checks if the Claude CLI is available in the system PATH
 func IsClaudeAvailable() bool {

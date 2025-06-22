@@ -1,3 +1,4 @@
+// Package main demonstrates how to use the claude-code-go SDK with streaming.
 package main
 
 import (

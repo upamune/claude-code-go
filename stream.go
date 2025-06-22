@@ -28,7 +28,7 @@ func (s *MessageStream) Close() {
 }
 
 // QueryStream executes a Claude Code query and returns a channel of messages
-func (c *ClaudeClient) QueryStream(ctx context.Context, prompt string, opts *Options) (*MessageStream, error) {
+func (c *clientImpl) QueryStream(ctx context.Context, prompt string, opts *Options) (*MessageStream, error) {
 	if prompt == "" {
 		return nil, &ConfigError{
 			Field:   "prompt",

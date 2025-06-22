@@ -7,6 +7,9 @@ import (
 	"strings"
 )
 
+// Compile-time check that implementations satisfy the interface
+var _ CommandExecutor = (*DefaultCommandExecutor)(nil)
+
 // CommandExecutor is an interface for executing commands
 type CommandExecutor interface {
 	Execute(ctx context.Context, name string, args []string, stdin string) ([]byte, error)

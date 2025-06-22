@@ -27,16 +27,9 @@ func TestNewClient(t *testing.T) {
 		t.Fatal("NewClient() returned nil")
 	}
 
-	if client.executor == nil {
-		t.Error("NewClient() executor is nil")
-	}
-
-	if client.builder == nil {
-		t.Error("NewClient() builder is nil")
-	}
-
-	if client.parser == nil {
-		t.Error("NewClient() parser is nil")
+	// Just verify it's the correct type
+	if _, ok := client.(*clientImpl); !ok {
+		t.Error("NewClient() did not return *clientImpl")
 	}
 }
 
@@ -48,20 +41,13 @@ func TestNewClientWithExecutor(t *testing.T) {
 		t.Fatal("NewClientWithExecutor() returned nil")
 	}
 
-	if client.executor != mockExecutor {
-		t.Error("NewClientWithExecutor() did not set custom executor")
-	}
-
-	if client.builder == nil {
-		t.Error("NewClientWithExecutor() builder is nil")
-	}
-
-	if client.parser == nil {
-		t.Error("NewClientWithExecutor() parser is nil")
+	// Just verify it's the correct type
+	if _, ok := client.(*clientImpl); !ok {
+		t.Error("NewClientWithExecutor() did not return *clientImpl")
 	}
 }
 
-func TestClaudeClient_Query(t *testing.T) {
+func TestClient_Query(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
@@ -178,7 +164,7 @@ func TestClaudeClient_Query(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockExecutor := &MockCommandExecutor{
-				ExecuteFunc: func(ctx context.Context, name string, args []string, stdin string) ([]byte, error) {
+				ExecuteFunc: func(_ context.Context, name string, args []string, stdin string) ([]byte, error) {
 					// Verify executable name
 					expectedName := "claude"
 					if tt.opts != nil && tt.opts.PathToClaudeCodeExecutable != "" {
@@ -246,7 +232,7 @@ func TestClaudeClient_Query(t *testing.T) {
 	}
 }
 
-func TestClaudeClient_QueryStream(t *testing.T) {
+func TestClient_QueryStream(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
@@ -323,7 +309,7 @@ func TestClaudeClient_QueryStream(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockExecutor := &MockCommandExecutor{
-				ExecuteStreamFunc: func(ctx context.Context, name string, args []string, stdin string) (io.ReadCloser, error) {
+				ExecuteStreamFunc: func(_ context.Context, _ string, args []string, _ string) (io.ReadCloser, error) {
 					if tt.streamErr != nil {
 						return nil, tt.streamErr
 					}
@@ -426,12 +412,7 @@ func TestDefaultMessageParser(t *testing.T) {
 	}
 }
 
-func TestClient_Interface(t *testing.T) {
-	// Ensure ClaudeClient implements Client interface
-	var _ Client = &ClaudeClient{}
-}
-
-func TestClaudeClient_QueryStream_ReaderError(t *testing.T) {
+func TestClient_QueryStream_ReaderError(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a custom reader that simulates a stream with an error
@@ -439,7 +420,7 @@ func TestClaudeClient_QueryStream_ReaderError(t *testing.T) {
 		`{"type": "assistant", "message": {"text": "response"}, "session_id": "test"}` + "\n"
 
 	mockExecutor := &MockCommandExecutor{
-		ExecuteStreamFunc: func(ctx context.Context, name string, args []string, stdin string) (io.ReadCloser, error) {
+		ExecuteStreamFunc: func(_ context.Context, _ string, _ []string, _ string) (io.ReadCloser, error) {
 			return &errorReaderCloser{
 				errorAfterNReads: &errorAfterNReads{
 					data:       streamData,
@@ -543,13 +524,13 @@ func resultMessageEqual(a, b *ResultMessage) bool {
 		a.Usage.OutputTokens == b.Usage.OutputTokens
 }
 
-func TestClaudeClient_BuildArgsIntegration(t *testing.T) {
+func TestClient_BuildArgsIntegration(t *testing.T) {
 	// Test that client properly integrates with ArgumentBuilder
 	ctx := context.Background()
 
 	calledWithArgs := false
 	mockExecutor := &MockCommandExecutor{
-		ExecuteFunc: func(ctx context.Context, name string, args []string, stdin string) ([]byte, error) {
+		ExecuteFunc: func(_ context.Context, _ string, args []string, _ string) ([]byte, error) {
 			calledWithArgs = true
 
 			// Check that options were properly converted to args

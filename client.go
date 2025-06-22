@@ -12,8 +12,11 @@ type Client interface {
 	QueryStream(ctx context.Context, prompt string, opts *Options) (*MessageStream, error)
 }
 
-// ClaudeClient implements the Client interface
-type ClaudeClient struct {
+// Compile-time check that clientImpl implements Client interface
+var _ Client = (*clientImpl)(nil)
+
+// clientImpl implements the Client interface
+type clientImpl struct {
 	executor CommandExecutor
 	builder  *ArgumentBuilder
 	parser   MessageParser
@@ -32,18 +35,18 @@ func (p *DefaultMessageParser) ParseMessage(line string) (Message, error) {
 	return ParseMessage(line)
 }
 
-// NewClient creates a new ClaudeClient with default components
-func NewClient() *ClaudeClient {
-	return &ClaudeClient{
+// NewClient creates a new Client with default components
+func NewClient() Client {
+	return &clientImpl{
 		executor: &DefaultCommandExecutor{},
 		builder:  &ArgumentBuilder{},
 		parser:   &DefaultMessageParser{},
 	}
 }
 
-// NewClientWithExecutor creates a new ClaudeClient with a custom executor
-func NewClientWithExecutor(executor CommandExecutor) *ClaudeClient {
-	return &ClaudeClient{
+// NewClientWithExecutor creates a new Client with a custom executor
+func NewClientWithExecutor(executor CommandExecutor) Client {
+	return &clientImpl{
 		executor: executor,
 		builder:  &ArgumentBuilder{},
 		parser:   &DefaultMessageParser{},
@@ -51,7 +54,7 @@ func NewClientWithExecutor(executor CommandExecutor) *ClaudeClient {
 }
 
 // Query executes a Claude Code query and returns the result
-func (c *ClaudeClient) Query(ctx context.Context, prompt string, opts *Options) (*ResultMessage, error) {
+func (c *clientImpl) Query(ctx context.Context, prompt string, opts *Options) (*ResultMessage, error) {
 	if prompt == "" {
 		return nil, &ConfigError{
 			Field:   "prompt",

@@ -30,7 +30,7 @@ func TestQuery(t *testing.T) {
 			name:   "successful query",
 			prompt: "Hello",
 			opts:   &Options{Model: "claude-3"},
-			mockFn: func(ctx context.Context, prompt string, opts *Options) (*ResultMessage, error) {
+			mockFn: func(_ context.Context, _ string, _ *Options) (*ResultMessage, error) {
 				return &ResultMessage{
 					Type:      "result",
 					SessionID: "test-session",
@@ -56,7 +56,7 @@ func TestQuery(t *testing.T) {
 			name:   "error from client",
 			prompt: "test",
 			opts:   nil,
-			mockFn: func(ctx context.Context, prompt string, opts *Options) (*ResultMessage, error) {
+			mockFn: func(_ context.Context, _ string, _ *Options) (*ResultMessage, error) {
 				return nil, errors.New("client error")
 			},
 			wantErr: true,
@@ -107,7 +107,7 @@ func TestQueryStream(t *testing.T) {
 			name:   "successful stream",
 			prompt: "Hello stream",
 			opts:   nil,
-			mockFn: func(ctx context.Context, prompt string, opts *Options) (*MessageStream, error) {
+			mockFn: func(_ context.Context, _ string, _ *Options) (*MessageStream, error) {
 				// Create a channel and send messages
 				ch := make(chan MessageOrError, 3)
 				go func() {
@@ -125,7 +125,7 @@ func TestQueryStream(t *testing.T) {
 			name:   "error from client",
 			prompt: "test",
 			opts:   nil,
-			mockFn: func(ctx context.Context, prompt string, opts *Options) (*MessageStream, error) {
+			mockFn: func(_ context.Context, _ string, _ *Options) (*MessageStream, error) {
 				return nil, errors.New("stream error")
 			},
 			wantErr: true,
@@ -299,7 +299,7 @@ func TestPackageFunctions_Integration(t *testing.T) {
 	// We'll use a custom executor to avoid actual CLI calls
 
 	mockExecutor := &MockCommandExecutor{
-		ExecuteFunc: func(ctx context.Context, name string, args []string, stdin string) ([]byte, error) {
+		ExecuteFunc: func(_ context.Context, _ string, _ []string, _ string) ([]byte, error) {
 			// Return a valid result
 			return []byte(`{
 				"type": "result",
@@ -308,7 +308,7 @@ func TestPackageFunctions_Integration(t *testing.T) {
 				"usage": {"input_tokens": 5, "output_tokens": 10}
 			}`), nil
 		},
-		ExecuteStreamFunc: func(ctx context.Context, name string, args []string, stdin string) (io.ReadCloser, error) {
+		ExecuteStreamFunc: func(_ context.Context, _ string, _ []string, _ string) (io.ReadCloser, error) {
 			// Return a stream with messages
 			data := strings.Join([]string{
 				`{"type": "user", "message": {}, "session_id": "test"}`,
@@ -361,7 +361,7 @@ func TestPackageFunctions_Integration(t *testing.T) {
 }
 
 // Ensure package-level functions match Client interface
-func TestPackageFunctionsSignature(t *testing.T) {
+func TestPackageFunctionsSignature(_ *testing.T) {
 	// This test ensures that the package-level functions have the same signature
 	// as the Client interface methods
 

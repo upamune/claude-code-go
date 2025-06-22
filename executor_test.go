@@ -9,6 +9,9 @@ import (
 	"time"
 )
 
+// Compile-time check that MockCommandExecutor implements CommandExecutor
+var _ CommandExecutor = (*MockCommandExecutor)(nil)
+
 // MockCommandExecutor is a mock implementation of CommandExecutor for testing
 type MockCommandExecutor struct {
 	ExecuteFunc       func(ctx context.Context, name string, args []string, stdin string) ([]byte, error)
@@ -202,7 +205,7 @@ func TestMockCommandExecutor(t *testing.T) {
 
 	t.Run("Execute", func(t *testing.T) {
 		mock := &MockCommandExecutor{
-			ExecuteFunc: func(ctx context.Context, name string, args []string, stdin string) ([]byte, error) {
+			ExecuteFunc: func(_ context.Context, name string, args []string, stdin string) ([]byte, error) {
 				if name == "test" && len(args) == 1 && args[0] == "arg" && stdin == "input" {
 					return []byte("output"), nil
 				}
@@ -221,7 +224,7 @@ func TestMockCommandExecutor(t *testing.T) {
 
 	t.Run("ExecuteStream", func(t *testing.T) {
 		mock := &MockCommandExecutor{
-			ExecuteStreamFunc: func(ctx context.Context, name string, args []string, stdin string) (io.ReadCloser, error) {
+			ExecuteStreamFunc: func(_ context.Context, name string, _ []string, _ string) (io.ReadCloser, error) {
 				if name == "stream" {
 					return &mockReadCloser{
 						Reader: strings.NewReader("stream data"),
@@ -259,14 +262,6 @@ func TestMockCommandExecutor(t *testing.T) {
 			t.Errorf("ExecuteStream() error = %v, want 'not implemented'", err)
 		}
 	})
-}
-
-func TestCommandExecutor_Interface(t *testing.T) {
-	// Ensure DefaultCommandExecutor implements CommandExecutor
-	var _ CommandExecutor = &DefaultCommandExecutor{}
-
-	// Ensure MockCommandExecutor implements CommandExecutor
-	var _ CommandExecutor = &MockCommandExecutor{}
 }
 
 func TestDefaultCommandExecutor_ExecuteStream_Timeout(t *testing.T) {
